@@ -10,12 +10,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -29,7 +26,6 @@ import com.plcoding.composegooglesignincleanarchitecture.presentation.sign_in.Si
 import com.plcoding.composegooglesignincleanarchitecture.presentation.sign_in.SignInViewModel
 import com.plcoding.composegooglesignincleanarchitecture.ui.theme.ComposeGoogleSignInCleanArchitectureTheme
 import kotlinx.coroutines.launch
-import kotlin.math.sign
 
 class MainActivity : ComponentActivity() {
 
@@ -44,7 +40,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ComposeGoogleSignInCleanArchitectureTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
@@ -56,7 +51,7 @@ class MainActivity : ComponentActivity() {
                             val state by viewModel.state.collectAsStateWithLifecycle()
 
                             LaunchedEffect(key1 = Unit) {
-                                if(googleAuthUiClient.getSignedInUser() != null) {
+                                if (googleAuthUiClient.getSignedInUser() != null) {
                                     navController.navigate("profile")
                                 }
                             }
@@ -64,10 +59,10 @@ class MainActivity : ComponentActivity() {
                             val launcher = rememberLauncherForActivityResult(
                                 contract = ActivityResultContracts.StartIntentSenderForResult(),
                                 onResult = { result ->
-                                    if(result.resultCode == RESULT_OK) {
+                                    if (result.resultCode == RESULT_OK) {
                                         lifecycleScope.launch {
                                             val signInResult = googleAuthUiClient.signInWithIntent(
-                                                intent = result.data ?: return@launch
+                                                intent = result.data
                                             )
                                             viewModel.onSignInResult(signInResult)
                                         }
@@ -76,13 +71,12 @@ class MainActivity : ComponentActivity() {
                             )
 
                             LaunchedEffect(key1 = state.isSignInSuccessful) {
-                                if(state.isSignInSuccessful) {
+                                if (state.isSignInSuccessful) {
                                     Toast.makeText(
                                         applicationContext,
                                         "Sign in successful",
                                         Toast.LENGTH_LONG
                                     ).show()
-
                                     navController.navigate("profile")
                                     viewModel.resetState()
                                 }
@@ -93,11 +87,11 @@ class MainActivity : ComponentActivity() {
                                 onSignInClick = {
                                     lifecycleScope.launch {
                                         val signInIntentSender = googleAuthUiClient.signIn()
-                                        launcher.launch(
-                                            IntentSenderRequest.Builder(
-                                                signInIntentSender ?: return@launch
-                                            ).build()
-                                        )
+                                        if (signInIntentSender != null) {
+                                            launcher.launch(
+                                                IntentSenderRequest.Builder(signInIntentSender).build()
+                                            )
+                                        }
                                     }
                                 }
                             )
@@ -113,7 +107,6 @@ class MainActivity : ComponentActivity() {
                                             "Signed out",
                                             Toast.LENGTH_LONG
                                         ).show()
-
                                         navController.popBackStack()
                                     }
                                 }

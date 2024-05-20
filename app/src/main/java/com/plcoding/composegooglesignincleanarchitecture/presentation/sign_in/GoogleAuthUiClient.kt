@@ -3,6 +3,7 @@ package com.plcoding.composegooglesignincleanarchitecture.presentation.sign_in
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
+import android.util.Log
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.BeginSignInRequest.GoogleIdTokenRequestOptions
 import com.google.android.gms.auth.api.identity.SignInClient
@@ -24,19 +25,25 @@ class GoogleAuthUiClient(
             oneTapClient.beginSignIn(
                 buildSignInRequest()
             ).await()
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
-            if(e is CancellationException) throw e
+            if (e is CancellationException) throw e
             null
         }
         return result?.pendingIntent?.intentSender
     }
 
-    suspend fun signInWithIntent(intent: Intent): SignInResult {
-        val credential = oneTapClient.getSignInCredentialFromIntent(intent)
-        val googleIdToken = credential.googleIdToken
-        val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
+    suspend fun signInWithIntent(intent: Intent?): SignInResult {
+        if (intent == null) {
+            return SignInResult(
+                data = null,
+                errorMessage = "Intent is null"
+            )
+        }
         return try {
+            val credential = oneTapClient.getSignInCredentialFromIntent(intent)
+            val googleIdToken = credential.googleIdToken
+            val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
             val user = auth.signInWithCredential(googleCredentials).await().user
             SignInResult(
                 data = user?.run {
@@ -48,9 +55,9 @@ class GoogleAuthUiClient(
                 },
                 errorMessage = null
             )
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
-            if(e is CancellationException) throw e
+            if (e is CancellationException) throw e
             SignInResult(
                 data = null,
                 errorMessage = e.message
@@ -62,9 +69,9 @@ class GoogleAuthUiClient(
         try {
             oneTapClient.signOut().await()
             auth.signOut()
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
-            if(e is CancellationException) throw e
+            if (e is CancellationException) throw e
         }
     }
 
@@ -77,12 +84,15 @@ class GoogleAuthUiClient(
     }
 
     private fun buildSignInRequest(): BeginSignInRequest {
+        val webClientId = context.getString(R.string.web_client_id)
+        Log.d("GoogleAuthUiClient", "Web Client ID: $webClientId")
+
         return BeginSignInRequest.Builder()
             .setGoogleIdTokenRequestOptions(
                 GoogleIdTokenRequestOptions.builder()
                     .setSupported(true)
                     .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(context.getString(R.string.web_client_id))
+                    .setServerClientId(webClientId)
                     .build()
             )
             .setAutoSelectEnabled(true)
